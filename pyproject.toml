@@ -1,0 +1,8 @@
+[tool.black]
+target-version = ['py311']
+skip-string-normalization = true
+skip-magic-trailing-comma = true
+
+[tool.pyright]
+venv = '.venv'
+venvPath = '.'

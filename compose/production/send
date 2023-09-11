@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+
+
+send_notification() {
+  notification_id=\$1
+  curl -X POST ${NOTIFICATION_URL}/${notification_id}
+}
+
+send_notification \$1
