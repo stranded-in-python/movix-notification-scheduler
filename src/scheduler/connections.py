@@ -3,10 +3,8 @@ from abc import ABC, abstractmethod
 from contextlib import closing
 from functools import wraps
 from time import sleep
-from typing import Any, Callable, Iterable, Mapping, cast
+from typing import Any, Callable, Iterable, cast
 
-from elasticsearch import Elasticsearch, TransportError
-from elasticsearch.helpers import BulkIndexError, bulk
 from psycopg2 import OperationalError
 from psycopg2 import connect as pg_connect
 from psycopg2.extensions import connection as pg_connection
@@ -15,7 +13,7 @@ from redis import Redis
 from redis.exceptions import ConnectionError, RedisError
 
 from .config.settings import settings
-from .exceptions import ConnectionFailedError, DataInconsistentError
+from .exceptions import ConnectionFailedError
 
 
 def get_cursor(connection: pg_connection) -> DictCursor:
@@ -24,17 +22,17 @@ def get_cursor(connection: pg_connection) -> DictCursor:
 
 class Connector(ABC):
     def __init__(self):
-        self.connection: Elasticsearch | pg_connection | Redis | None = None
+        self.connection: pg_connection | Redis | None = None
 
     @abstractmethod
-    def _connect(self) -> Elasticsearch | pg_connection | Redis:
+    def _connect(self) -> pg_connection | Redis:
         ...
 
     @abstractmethod
     def _ping(self):
         ...
 
-    def connect(self) -> Elasticsearch | pg_connection | Redis:
+    def connect(self) -> pg_connection | Redis:
         if not self.connection:
             self.connection = self._connect()
         return self.connection
@@ -66,23 +64,6 @@ class PostgresConnector(Connector):
 
     def _connect(self) -> pg_connection:
         return pg_connect(**self.dsl, cursor_factory=DictCursor)
-
-
-class ElasticConnector(Connector):
-    def __init__(self, endpoint: str | None = None):
-        super().__init__()
-        if not endpoint:
-            self.endpoint = settings.elastic_endpoint
-        else:
-            self.endpoint = endpoint
-
-    def _ping(self):
-        self.connection: Elasticsearch
-        if not self.connection.ping():
-            raise TransportError("No ping from ElasticSearch")
-
-    def _connect(self) -> Elasticsearch:
-        return Elasticsearch(self.endpoint)
 
 
 class RedisConnector(Connector):
@@ -118,9 +99,7 @@ def backing_connect(connector: Connector) -> Callable:
                         connector.reconnect()  # type: ignore
 
                     return func(*args, **kwargs)
-                except (
-                    OperationalError or TransportError or ConnectionError or RedisError
-                ) as e:
+                except (OperationalError or ConnectionError or RedisError) as e:
                     logging.error(e)
                     is_connected = False
                     time_passed += wait
@@ -146,7 +125,7 @@ class ConnectionManager:
     def back_connection(self) -> Callable:
         return backing_connect(self.connector)
 
-    def get_connection(self) -> pg_connection | Redis | Elasticsearch:
+    def get_connection(self) -> pg_connection | Redis:
         if self._connection:
             return self._connection
 
@@ -154,11 +133,11 @@ class ConnectionManager:
         return self._connection
 
     @property
-    def connection(self) -> pg_connection | Redis | Elasticsearch | None:
+    def connection(self) -> pg_connection | Redis | None:
         return self.get_connection()
 
     @connection.setter
-    def connection(self, connection: pg_connection | Redis | Elasticsearch | None):
+    def connection(self, connection: pg_connection | Redis | None):
         self._connection = connection
 
     def __exit__(self, *args):

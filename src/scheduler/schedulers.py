@@ -13,6 +13,10 @@ class Scheduler(abc.ABC):
         ...
 
     @abc.abstractmethod
+    def unschedule(self, entries: typing.Iterable[models.CronEntry]):
+        ...
+
+    @abc.abstractmethod
     def generate_command(self, entry: models.CronEntry) -> str:
         ...
 
