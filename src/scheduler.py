@@ -1,4 +1,4 @@
-"""Loading data from Postgresql to ElasticSearch"""
+"""Watching over cron tables to launch jobs"""
 import logging
 import os
 from time import sleep
@@ -33,12 +33,12 @@ class ScheduleManager:
             try:
                 self.scheduler.unschedule(to_be_deleted)
                 self.scheduler.schedule(to_be_scheduled)
-                self.cleaner.clean(to_be_deleted)
+                self.cleaner.clean(table, to_be_deleted)
             except Error as e:
                 logging.error(e)
                 continue
             self.producer.set_state(table)
-        logging.info(f"Pending...")
+        logging.info("Pending...")
 
 
 class PostgresScheduleManager(ScheduleManager):

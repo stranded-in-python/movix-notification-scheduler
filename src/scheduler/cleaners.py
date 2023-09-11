@@ -1,11 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Iterable
 
-from scheduler.config import settings
-
 from .connections import ConnectionManager, PostgresConnectionManager
 from .models import CronEntry
-from .state import State
 
 
 def scan(tables, scanning_method) -> Iterable[tuple[str, Iterable, Iterable]]:
@@ -16,7 +13,7 @@ def scan(tables, scanning_method) -> Iterable[tuple[str, Iterable, Iterable]]:
 
 
 class Cleaner(ABC):
-    def __init__(self, state: State, manager: ConnectionManager):
+    def __init__(self, manager: ConnectionManager):
         self.manager: ConnectionManager = manager
 
     @abstractmethod
@@ -25,8 +22,8 @@ class Cleaner(ABC):
 
 
 class PostgresCleaner(Cleaner):
-    def __init__(self, state: State, manager: PostgresConnectionManager):
-        super().__init__(state, manager)
+    def __init__(self, manager: PostgresConnectionManager):
+        super().__init__(manager)
         self.manager: PostgresConnectionManager = manager
 
     def clean(self, table: str, entries: Iterable[CronEntry]):
