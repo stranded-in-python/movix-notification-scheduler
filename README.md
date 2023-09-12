@@ -1,6 +1,4 @@
-# The name of Project
-
-Movix notification scheduler
+# Movix notification scheduler
 
 ## What is this?
 
