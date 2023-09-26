@@ -26,5 +26,12 @@ class Settings(pydantic.BaseSettings):
     waiting_factor: int = 2
     first_nap: float = 0.1
 
+    sentry_dsn_api: str = ""
+
 
 settings = Settings()  # type: ignore
+
+if settings.sentry_dsn_api:
+    import sentry_sdk  # type: ignore
+
+    sentry_sdk.init(dsn=settings.sentry_dsn_api, traces_sample_rate=1.0)
